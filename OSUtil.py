@@ -10,8 +10,8 @@ from datetime import datetime
 class OSutil():
 
 	#Init the backend program for subbie
-	def __init__(self, name, password, library_path, q, language='eng', user_agent='Adefjukie'):
-
+	def __init__(self, name, password, library_path, q, language='eng', user_agent='Adefjukie'):#UserAgent registered with opensubtitles.
+																					#UserAgent makes the username and password unneeded.
 		# We are talking to the GUI status output whenever you see a q.put
 		q.put_nowait('Starting')
 
@@ -22,12 +22,12 @@ class OSutil():
 		self.username = name
 		self.password = password
 		self.url = 'http://api.opensubtitles.org/xml-rpc' #Import API
+
 		self.server = ServerProxy(self.url)
 		self.login_status = False
 		
 		#The Open subtitles server is bad and sometimes does not respond for a minute. 5 minutes is overkill
 		while self.login_status == False:
-
 			self.started = datetime.now()
 			if (self.started-self.last_checked).seconds >= self.time_limit:
 				
@@ -40,12 +40,13 @@ class OSutil():
 				self.token = self.server.LogIn(self.username, self.password, language, user_agent)['token']
 				self.login_status = True
 			except:
+				print('The OpenSubtitles server is down, trying again in 30 seconds')
 				q.put_nowait('The OpenSubtitles server is down, trying again in 30 seconds')
 				time.sleep(30)
 
 
 
-	def decompress(self, data, encoding='utf-8'):
+	def decompress(self, data, q, encoding='utf-8'):
 
 		self.raw_subtitle = zlib.decompress(base64.b64decode(data), 16 + zlib.MAX_WBITS)
 		self.encode_detect = detect(self.raw_subtitle)
@@ -69,7 +70,8 @@ class OSutil():
 			self.file = open(path + file, "rb")
 		except(IOError):
 			return "IOError"
-
+		time.sleep(.1)
+		self.size = os.path.getsize(path + file) 
 		hash = int(self.size)
 
 		if int(self.size) < 65536 * 2:
@@ -133,7 +135,7 @@ class OSutil():
 			for item in self.encodedData:
 				self.subfile_id = item['idsubtitlefile']
 
-				self.decodedData = self.decompress(item['data'], encoding=encoding)
+				self.decodedData = self.decompress(item['data'], q, encoding=encoding)
 				with open(r"files\\ads\\del_list.txt") as file_in:
 					del_list = file_in.readlines()
 					file_in.close()
@@ -146,7 +148,6 @@ class OSutil():
 					end_cutoff = file_in.readlines()
 					file_in.close()
 				for x, val in enumerate(del_list):
-					print(del_list[x])
 					self.decodedData = self.decodedData.replace(del_list[x].strip(), '')  
 				try:
 					self.decodedData = self.decodedData[0 : self.decodedData.index('Please rate this subtitle')]
@@ -188,7 +189,7 @@ class OSutil():
 								break
 					except ProtocolError:
 						q.put_nowait('To Many Requests, Trying again in 10 seconds (Normal for large libraries)')
-						time.sleep(10.1)
+						time.sleep(10.3)
 
 		q.put_nowait('Finished')
 
