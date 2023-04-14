@@ -2,7 +2,6 @@ from xmlrpc.client import ServerProxy, ProtocolError
 import zlib, base64, os, time, requests, sys, struct
 from cchardet import detect
 from datetime import datetime
-#from pythonopensubtitles.utils import File
 
 # We are talking to the GUI status output whenever you see a q.put
 
@@ -21,9 +20,9 @@ class OSutil():
 		self.library_path = library_path
 		self.username = name
 		self.password = password
-		self.url = 'http://api.opensubtitles.org/xml-rpc' #Import API
+		self.os_url = 'http://api.opensubtitles.org/xml-rpc' #Import API
 
-		self.server = ServerProxy(self.url)
+		self.server = ServerProxy(self.os_url)
 		self.login_status = False
 		
 		#The Open subtitles server is bad and sometimes does not respond for a minute. 5 minutes is overkill
