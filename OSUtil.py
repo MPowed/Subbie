@@ -10,7 +10,7 @@ class OSutil():
 
 	#Init the backend program for subbie
 	def __init__(self, name, password, library_path, q, language='eng', user_agent='Adefjukie'):#UserAgent registered with opensubtitles.
-																					#UserAgent makes the username and password unneeded.
+																					#UserAgent makes the username and password unneeded as long as it is Valid
 		# We are talking to the GUI status output whenever you see a q.put
 		q.put_nowait('Starting')
 
@@ -21,19 +21,18 @@ class OSutil():
 		self.username = name
 		self.password = password
 		self.os_url = 'http://api.opensubtitles.org/xml-rpc' #Import API
-
 		self.server = ServerProxy(self.os_url)
+
 		self.login_status = False
 		
 		#The Open subtitles server is bad and sometimes does not respond for a minute. 5 minutes is overkill
 		while self.login_status == False:
 			self.started = datetime.now()
-			if (self.started-self.last_checked).seconds >= self.time_limit:
+			if (self.started-self.last_checked).seconds >= self.time_limit: #create a timer that will cancel the connection process out if it reaches time_limit
 				
 				# Alert the user that we are stuck waiting for the server.
 				self.last_checked = datetime.now()
-				q.put_nowait('It seems the server is down. Try again another time')
-
+				q.put_nowait('Server error, Program will try again')
 			# The Open Subtitles server seems to go down for a second now and then. Waiting for it to return fixes issue	
 			try:
 				self.token = self.server.LogIn(self.username, self.password, language, user_agent)['token']
@@ -44,7 +43,7 @@ class OSutil():
 				time.sleep(30)
 
 
-
+	#Decompress the raw subtitle so we can read it			
 	def decompress(self, data, q, encoding='utf-8'):
 
 		self.raw_subtitle = zlib.decompress(base64.b64decode(data), 16 + zlib.MAX_WBITS)
@@ -120,7 +119,7 @@ class OSutil():
 		
 		last_chars = ''
 		last_chars = self.fullMovieName[-4:]
-		#avoid duplicates and seperated for future editing
+		#avoid duplicates and seperate for future editing
 		if  last_chars == '.jpg':
 			pass
 		elif  last_chars == '.srt':
